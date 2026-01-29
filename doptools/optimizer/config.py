@@ -97,33 +97,31 @@ def suggest_params(trial, method):
         }
     elif method == 'XGBR':
         params = {
-            'max_depth': trial.suggest_int("max_depth", 3, 18),
-            'eta': trial.suggest_float('eta', 1e-9, 1, log=True),
-            'gamma': trial.suggest_float('gamma', 1, 9),
-            'reg_alpha': trial.suggest_int('reg_alpha', 10, 180),
-            'reg_lambda': trial.suggest_float('reg_lambda', 0, 1),
-            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1),
-            'min_child_weight': trial.suggest_int('min_child_weight', 0, 10),
-            'n_estimators': trial.suggest_categorical("n_estimators", [20, 50, 100, 150, 200]),
-            'subsample': trial.suggest_float('subsample', 0.5, 1),
-            'sampling_method': trial.suggest_categorical('sampling_method', ['uniform']),
-            'booster': trial.suggest_categorical('booster', ['gbtree', 'gblinear', 'dart']),
-            'tree_method': trial.suggest_categorical('tree_method', ['auto', 'exact', 'approx', 'hist']) 
+            'n_estimators': trial.suggest_int("n_estimators", 100, 1000), # Increased range
+            'max_depth': trial.suggest_int("max_depth", 3, 10),           # 18 is usually too deep (overfit)
+            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True), # 'eta'
+            'gamma': trial.suggest_float('gamma', 1e-8, 1.0, log=True),  # Much more permissive
+            'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 1.0, log=True), # $L_1$ regularization
+            'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 1.0, log=True),# $L_2$ regularization
+            'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+            'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
+            'booster': 'gbtree', # Stick to trees first for QSPR
+            'tree_method': 'auto'
         }
     elif method == 'XGBC':
         params = {
-            'max_depth': trial.suggest_int("max_depth", 3, 18),
-            'eta': trial.suggest_float('eta', 1e-9, 1, log=True),
-            'gamma': trial.suggest_float('gamma', 1, 9),
-            'reg_alpha': trial.suggest_int('reg_alpha', 10, 180),
-            'reg_lambda': trial.suggest_float('reg_lambda', 0, 1),
-            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1),
-            'min_child_weight': trial.suggest_int('min_child_weight', 0, 10),
-            'n_estimators': trial.suggest_categorical("n_estimators", [20, 50, 100, 150, 200]),
-            'subsample': trial.suggest_float('subsample', 0.5, 1),
-            'sampling_method': trial.suggest_categorical('sampling_method', ['uniform']),
-            'booster': trial.suggest_categorical('booster', ['gbtree', 'gblinear', 'dart']),
-            'tree_method': trial.suggest_categorical('tree_method', ['auto', 'exact', 'approx', 'hist'])
+            'n_estimators': trial.suggest_int("n_estimators", 100, 1000), # Increased range
+            'max_depth': trial.suggest_int("max_depth", 3, 10),           # 18 is usually too deep (overfit)
+            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True), # 'eta'
+            'gamma': trial.suggest_float('gamma', 1e-8, 1.0, log=True),  # Much more permissive
+            'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 1.0, log=True), # $L_1$ regularization
+            'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 1.0, log=True),# $L_2$ regularization
+            'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+            'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
+            'booster': 'gbtree', # Stick to trees first for QSPR
+            'tree_method': 'auto'
         }
     elif method == 'RFR':
         params = {
