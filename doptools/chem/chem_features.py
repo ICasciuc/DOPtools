@@ -28,6 +28,7 @@ from rdkit.Avalon import pyAvalonTools
 #from mordred import Calculator, descriptors
 from doptools.chem.utils import _add_stereo_substructure
 from functools import partialmethod
+from warnings import warn
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
