@@ -165,7 +165,7 @@ Copyright
 
 Contributors
 ============
-* Philippe Gantzer p.gantzer@icredd.hokudai.ac.jp
+* [Philippe Gantzer](https://github.com/PGantzer)
 * Iuri Casciuc yurii.kashuk@gmail.com
 * Said Byadi saidbyadi@icredd.hokudai.ac.jp
 * Timur Gimadiev timur.gimadiev@gmail.com
