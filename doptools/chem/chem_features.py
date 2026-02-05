@@ -708,7 +708,7 @@ class PassThrough(DescriptorCalculator, BaseEstimator, TransformerMixin):
         """
         return self
     
-    def transform(self, x: DataFrame, y: Optional[List] = None):
+    def transform(self, x: DataFrame, y: Optional[List] = None, check: Optional[bool] = True):
         """
         Returns the column without any transformation.
 
@@ -718,8 +718,14 @@ class PassThrough(DescriptorCalculator, BaseEstimator, TransformerMixin):
         :param y: required by default by scikit-learn standards, but
             doesn't change the function at all.
         :type y: None
+
+        :param check: whenever to check all values are numerical.
+        :type check: bool
         """
-        return pd.DataFrame(x[self.column_names], columns=self.column_names)
+        df = pd.DataFrame(x[self.column_names], columns=self.column_names)
+        if check and not df.applymap(lambda x: isinstance(x, (float, int))).all().all():
+            raise ValueError('Non numerical value(s) provided to PassThrough')
+        return df
 
     def get_feature_names(self):
         return self.feature_names
