@@ -28,6 +28,7 @@ from rdkit.Avalon import pyAvalonTools
 #from mordred import Calculator, descriptors
 from doptools.chem.utils import _add_stereo_substructure
 from functools import partialmethod
+from warnings import warn
 
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
@@ -419,12 +420,8 @@ class Fingerprinter(DescriptorCalculator, BaseEstimator, TransformerMixin):
         return self
         
     def get_features(self, x, output="smiles"):
-
         features = dict([(i, []) for i in range(self.nBits)])
-        if self.fmt == "smiles":
-            m = Chem.MolFromSmiles(x)
-        else:
-            m = Chem.MolFromSmiles(str(x))
+        m = Chem.MolFromSmiles(str(x))
         if self.fp_type == 'avalon':
             pass
         elif self.fp_type == 'layered':
@@ -435,20 +432,19 @@ class Fingerprinter(DescriptorCalculator, BaseEstimator, TransformerMixin):
             pass
 
         elif self.fp_type == "morgan":
-            if "useFeatures" not in self.params:
-                frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, 
-                                                                    includeChirality=self.chirality, 
-                                                                    fpSize=self.nBits)
-            elif not self.params["useFeatures"]:
-                frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, 
-                                                                    includeChirality=self.chirality, 
-                                                                    fpSize=self.nBits)
-            else:
+            if not hasattr(self, 'chirality'): #Back compatibility
+                self.chirality = False
+                warn('Compatibility mode: The pipeline was created with an older version of DOPTools. Consider recreating it')
+
+            if "useFeatures" in self.params and self.params["useFeatures"]:
                 feat_gen = Chem.rdFingerprintGenerator.GetMorganFeatureAtomInvGen()
-                frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, 
-                                                                    includeChirality=self.chirality, 
-                                                                    fpSize=self.nBits, 
-                                                                    atomInvariantsGenerator=feat_gen)
+            else:
+                feat_gen = None
+
+            frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius,
+                                                                includeChirality=self.chirality,
+                                                                fpSize=self.nBits,
+                                                                atomInvariantsGenerator=feat_gen)
             ao = AllChem.AdditionalOutput()
             ao.CollectBitInfoMap()
             desc = frg.GetFingerprintAsNumPy(m, additionalOutput=ao)
@@ -521,42 +517,40 @@ class Fingerprinter(DescriptorCalculator, BaseEstimator, TransformerMixin):
         """
         res = []
         for x in X:
-            if self.fmt == "smiles":
-                m = Chem.MolFromSmiles(x)
-            else:
-                m = Chem.MolFromSmiles(str(x))
+            m = Chem.MolFromSmiles(str(x))
             if self.fp_type == 'avalon':
                 res.append(pyAvalonTools.GetAvalonFP(m, nBits=self.nBits))
             elif self.fp_type == 'layered':
                 res.append(Chem.LayeredFingerprint(m, fpSize=self.nBits,
                                                    maxPath=self.size[0], **self.params))
             else:
+                if not hasattr(self, 'chirality'):  # Back compatibility
+                    self.chirality = False
+                    warn('Compatibility mode: The pipeline was created with an older version of DOPTools. Consider recreating it')
+
                 if self.fp_type == "atompairs":
                     frg = Chem.rdFingerprintGenerator.GetAtomPairGenerator(includeChirality=self.chirality,
-                                                                     fpSize=self.nBits)
-                if self.fp_type == 'morgan':
-                    if "useFeatures" not in self.params:
-                        frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, 
-                                                                                           includeChirality=self.chirality, 
-                                                                                           fpSize=self.nBits)
-                    elif not self.params["useFeatures"]:
-                        frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, 
-                                                                                           includeChirality=self.chirality, 
-                                                                                           fpSize=self.nBits)
-                    else:
+                                                                           fpSize=self.nBits)
+                elif self.fp_type == 'morgan':
+                    if "useFeatures" in self.params and self.params["useFeatures"]:
                         feat_gen = Chem.rdFingerprintGenerator.GetMorganFeatureAtomInvGen()
-                        frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius, 
-                                                                                           includeChirality=self.chirality, 
-                                                                                           fpSize=self.nBits, 
-                                                                                           atomInvariantsGenerator=feat_gen)
-                if self.fp_type == 'torsion':
-                    frg = Chem.rdFingerprintGenerator.GetTopologicalTorsionGenerator(includeChirality=self.chirality, 
-                                                                               fpSize=self.nBits)
-                if self.fp_type == 'rdkfp':
-                    frg = Chem.rdFingerprintGenerator.GetRDKitFPGenerator(maxPath=self.radius, 
-                                                                                         useHs=False, 
-                                                                                         fpSize=self.nBits,
-                                                                                         **self.params)
+                    else:
+                        feat_gen = None
+
+                    frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius,
+                                                                         includeChirality=self.chirality,
+                                                                         fpSize=self.nBits,
+                                                                         atomInvariantsGenerator=feat_gen)
+                elif self.fp_type == 'torsion':
+                    frg = Chem.rdFingerprintGenerator.GetTopologicalTorsionGenerator(includeChirality=self.chirality,
+                                                                                     fpSize=self.nBits)
+                elif self.fp_type == 'rdkfp':
+                    frg = Chem.rdFingerprintGenerator.GetRDKitFPGenerator(maxPath=self.radius,
+                                                                          useHs=False,
+                                                                          fpSize=self.nBits,
+                                                                          **self.params)
+                else:
+                    raise ValueError('Unknown fingerprint type')
                 res.append(frg.GetFingerprintAsNumPy(m))
         return pd.DataFrame(np.array(res), columns=[str(i) for i in range(self.nBits)])
 
@@ -711,7 +705,7 @@ class PassThrough(DescriptorCalculator, BaseEstimator, TransformerMixin):
         """
         return self
     
-    def transform(self, x: DataFrame, y: Optional[List] = None):
+    def transform(self, x: DataFrame, y: Optional[List] = None, check: Optional[bool] = True):
         """
         Returns the column without any transformation.
 
@@ -721,8 +715,14 @@ class PassThrough(DescriptorCalculator, BaseEstimator, TransformerMixin):
         :param y: required by default by scikit-learn standards, but
             doesn't change the function at all.
         :type y: None
+
+        :param check: whenever to check all values are numerical.
+        :type check: bool
         """
-        return pd.DataFrame(x[self.column_names], columns=self.column_names)
+        df = pd.DataFrame(x[self.column_names], columns=self.column_names)
+        if check and not df.applymap(lambda x: isinstance(x, (float, int))).all().all():
+            raise ValueError('Non numerical value(s) provided to PassThrough')
+        return df
 
     def get_feature_names(self):
         return self.feature_names
