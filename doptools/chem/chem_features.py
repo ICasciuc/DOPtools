@@ -531,29 +531,26 @@ class Fingerprinter(DescriptorCalculator, BaseEstimator, TransformerMixin):
                 if self.fp_type == "atompairs":
                     frg = Chem.rdFingerprintGenerator.GetAtomPairGenerator(includeChirality=self.chirality,
                                                                            fpSize=self.nBits)
-                if self.fp_type == 'morgan':
-                    if "useFeatures" not in self.params:
-                        frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius,
-                                                                             includeChirality=self.chirality,
-                                                                             fpSize=self.nBits)
-                    elif not self.params["useFeatures"]:
-                        frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius,
-                                                                             includeChirality=self.chirality,
-                                                                             fpSize=self.nBits)
-                    else:
+                elif self.fp_type == 'morgan':
+                    if "useFeatures" in self.params and self.params["useFeatures"]:
                         feat_gen = Chem.rdFingerprintGenerator.GetMorganFeatureAtomInvGen()
-                        frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius,
-                                                                             includeChirality=self.chirality,
-                                                                             fpSize=self.nBits,
-                                                                             atomInvariantsGenerator=feat_gen)
-                if self.fp_type == 'torsion':
+                    else:
+                        feat_gen = None
+
+                    frg = Chem.rdFingerprintGenerator.GetMorganGenerator(radius=self.radius,
+                                                                         includeChirality=self.chirality,
+                                                                         fpSize=self.nBits,
+                                                                         atomInvariantsGenerator=feat_gen)
+                elif self.fp_type == 'torsion':
                     frg = Chem.rdFingerprintGenerator.GetTopologicalTorsionGenerator(includeChirality=self.chirality,
                                                                                      fpSize=self.nBits)
-                if self.fp_type == 'rdkfp':
+                elif self.fp_type == 'rdkfp':
                     frg = Chem.rdFingerprintGenerator.GetRDKitFPGenerator(maxPath=self.radius,
                                                                           useHs=False,
                                                                           fpSize=self.nBits,
                                                                           **self.params)
+                else:
+                    raise ValueError('Unknown fingerprint type')
                 res.append(frg.GetFingerprintAsNumPy(m))
         return pd.DataFrame(np.array(res), columns=[str(i) for i in range(self.nBits)])
 
