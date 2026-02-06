@@ -24,6 +24,7 @@ import copy
 from functools import partial
 from multiprocessing import Manager
 from scipy.sparse import issparse
+import multiprocessing as mp
 
 import numpy as np
 import pandas as pd
@@ -240,15 +241,19 @@ def run_objective_study_with_timeout(storage, results_detailed, x_dict, y, outdi
 
 
 def launch_study(x_dict, y, outdir, method, ntrials, cv_splits, cv_repeats, jobs, tmout, earlystop, write_output: bool = True):
-    manager = Manager()
-    results_dict = manager.dict()
-    results_detailed = manager.dict()
+    ctx = mp.get_context()
+    with ctx.Manager() as manager:
+        results_dict = manager.dict()
+        results_detailed = manager.dict()
 
-    study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler())
-    kwargs_opt = {'callbacks':[TopNPatienceCallback(earlystop[0], earlystop[1])]} if earlystop[0] > 0 else {}
-    study.optimize(partial(run_objective_study_with_timeout, results_dict, results_detailed, x_dict, y, outdir, method, ntrials,
-                           cv_splits, cv_repeats, jobs, tmout, earlystop, write_output),
-                   n_trials=ntrials, n_jobs=jobs, catch=(TimeoutError,), **kwargs_opt)
+        study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler())
+        kwargs_opt = {'callbacks':[TopNPatienceCallback(earlystop[0], earlystop[1])]} if earlystop[0] > 0 else {}
+        study.optimize(partial(run_objective_study_with_timeout, results_dict, results_detailed, x_dict, y, outdir, method, ntrials,
+                               cv_splits, cv_repeats, jobs, tmout, earlystop, write_output),
+                       n_trials=ntrials, n_jobs=jobs, catch=(TimeoutError,), **kwargs_opt)
+
+        results_dict = dict(results_dict)
+        results_detailed = dict(results_detailed)
     
     hyperparam_names = list(results_dict[next(iter(results_dict))].keys())
 
