@@ -165,7 +165,7 @@ Copyright
 
 Contributors
 ============
-* [Philippe Gantzer](https://github.com/PGantzer)
+* `Philippe Gantzer <https://github.com/PGantzer>`_
 * Iuri Casciuc yurii.kashuk@gmail.com
 * Said Byadi saidbyadi@icredd.hokudai.ac.jp
 * Timur Gimadiev timur.gimadiev@gmail.com
